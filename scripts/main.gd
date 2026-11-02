@@ -7,7 +7,7 @@ const PlayerScript = preload("res://scripts/player.gd")
 const HudScript = preload("res://scripts/hud.gd")
 
 const TEX_RESOURCE = {
-	"wood": preload("res://assets/items/icon_logs.png"),
+	"wood": preload("res://assets/items/tree.png"),
 	"grass": preload("res://assets/items/icon_grass.png"),
 	"leaves": preload("res://assets/items/icon_leaf.png"),
 }
@@ -16,6 +16,7 @@ const TEX_PLOT_SEEDED = preload("res://assets/items/plot_seeded.png")
 const TEX_PLOT_SPROUT = preload("res://assets/items/plot_sprout.png")
 const TEX_PLOT_GROWING = preload("res://assets/items/plot_growing.png")
 const TEX_PLOT_RIPE = preload("res://assets/items/plot_ripe.png")
+const TEX_STUMP = preload("res://assets/items/stump.png")
 const PLOT_SIZE = Vector2(150, 90)
 const PLOT_PAD = Vector2(11, 44)     # transparent margin around the soil in the plot textures
 
@@ -62,13 +63,15 @@ func _ready() -> void:
 	hud.toast("Welcome! You are uncategorised: the virus left no Alpha, Beta or Omega traits. Gather wood, grass and leaves with E.")
 
 func _add_resources() -> void:
+	# Leaf bushes grow beside the trees; grass is scattered around the territory.
 	var defs := [
-		["wood", Vector2(110, 190)], ["wood", Vector2(210, 160)], ["wood", Vector2(330, 200)],
+		["wood", Vector2(100, 240)], ["leaves", Vector2(176, 288)],
+		["wood", Vector2(270, 240)], ["leaves", Vector2(346, 288)],
+		["wood", Vector2(440, 235)], ["leaves", Vector2(516, 283)],
 		["grass", Vector2(330, 430)], ["grass", Vector2(560, 200)], ["grass", Vector2(650, 450)],
-		["leaves", Vector2(700, 190)], ["leaves", Vector2(740, 330)], ["leaves", Vector2(560, 540)],
 	]
 	for d in defs:
-		resources.append({"type": d[0], "pos": d[1], "charges": Config.RESOURCE_CHARGES, "regrow": 0.0})
+		resources.append({"type": d[0], "pos": d[1], "charges": Config.RESOURCE_CHARGES, "regrow": 0.0, "total": Config.RESPAWN_SECONDS[d[0]]})
 
 func _add_posts(t: Rect2) -> void:
 	var inset := 32.0
@@ -141,10 +144,10 @@ func find_target() -> Dictionary:
 	for r in resources:
 		if r["charges"] <= 0:
 			continue
-		var d: float = p.distance_to(r["pos"]) - 26.0
+		var d: float = p.distance_to(r["pos"]) - 28.0
 		if d < best_d:
 			best_d = d
-			best = {"kind": "resource", "ref": r, "label": "E: gather " + r["type"]}
+			best = {"kind": "resource", "ref": r, "label": "E: chop tree" if r["type"] == "wood" else "E: gather " + r["type"]}
 	# farm plot (closest point on rectangle)
 	var cp := Vector2(clampf(p.x, plot_rect.position.x, plot_rect.end.x), clampf(p.y, plot_rect.position.y, plot_rect.end.y))
 	var dp: float = p.distance_to(cp)
@@ -194,7 +197,7 @@ func _gather(r: Dictionary) -> void:
 	if player != null:
 		player.play_action("chop" if type == "wood" else "pick")
 	if r["charges"] <= 0:
-		r["regrow"] = Config.RESOURCE_REGROW_SECONDS
+		r["regrow"] = r["total"]
 	inventory[type] += 1
 	total_gathered += 1
 	hud.toast("+1 %s" % type)
@@ -343,9 +346,22 @@ func _draw_star(c: Vector2, r: float) -> void:
 
 func _draw_resource(r: Dictionary) -> void:
 	var pos: Vector2 = r["pos"]
-	var tex: Texture2D = TEX_RESOURCE[r["type"]]
-	var col := Color(1, 1, 1, 1) if r["charges"] > 0 else Color(1, 1, 1, 0.25)
-	draw_texture(tex, pos - tex.get_size() / 2.0, col)
+	var type: String = r["type"]
+	var tex: Texture2D = TEX_RESOURCE[type]
+	var base := pos + Vector2(0, 20)       # ground point under the node
+	var grown: bool = r["charges"] > 0
+	var p := 1.0 if grown else clampf(1.0 - r["regrow"] / r["total"], 0.0, 1.0)   # regrowth progress 0..1
+	if type == "wood":
+		if grown or p >= 0.5:
+			var sc := 1.0 if grown else 0.4 + 0.6 * ((p - 0.5) / 0.5)           # sapling grows back
+			var size := tex.get_size() * sc
+			draw_texture_rect(tex, Rect2(base - Vector2(size.x / 2.0, size.y), size), false)
+		else:
+			draw_texture(TEX_STUMP, base - Vector2(TEX_STUMP.get_size().x / 2.0, TEX_STUMP.get_size().y))
+	else:
+		var sc2 := 1.0 if grown else 0.3 + 0.7 * p                              # regrows from a tiny shoot
+		var size2 := tex.get_size() * sc2
+		draw_texture_rect(tex, Rect2(pos + Vector2(-size2.x / 2.0, 12.0 - size2.y), size2), false, Color(1, 1, 1, 1.0 if grown else 0.75))
 
 func _draw_nest() -> void:
 	var tier := nest_tier()

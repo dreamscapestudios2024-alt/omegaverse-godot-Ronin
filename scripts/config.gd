@@ -11,7 +11,9 @@ const INTERACT_RANGE = 52.0          # measured from the edge of the object to t
 
 # --- Resources (PROVISIONAL) ---
 const RESOURCE_CHARGES = 3           # gathers before a node is depleted
-const RESOURCE_REGROW_SECONDS = 10.0
+# Environmental respawn: a used-up node regrows on its own after this many seconds.
+# Trees and the leaves growing beside them share the same slow timer. (PROVISIONAL ~1 minute)
+const RESPAWN_SECONDS = {"wood": 60.0, "grass": 60.0, "leaves": 60.0}
 const INVENTORY_CAP_PER_TYPE = 20
 const GATHER_OBJECTIVE_AMOUNT = 6    # "gather materials" objective: total items gathered
 

@@ -26,8 +26,21 @@ func _initialize() -> void:
 			main.interact()
 	check(main.total_gathered == 27, "gathered 27 items from 9 nodes (got %d)" % main.total_gathered)
 
+	# environmental respawn: depleted nodes stay empty ~1 minute, then regrow
+	var all_empty := true
+	for r in main.resources:
+		if r["charges"] != 0: all_empty = false
+	check(all_empty, "all gathered nodes are depleted")
+	main._process(30.0)
+	check(main.resources[0]["charges"] == 0, "trees still regrowing after 30s")
+	main._process(31.0)
+	var all_back := true
+	for r in main.resources:
+		if r["charges"] != 3: all_back = false
+	check(all_back, "all nodes respawned after ~1 minute")
+
 	# interacting far from anything does nothing
-	main.player.position = Vector2(400, 250)
+	main.player.position = Vector2(700, 330)
 	var before: int = main.total_gathered
 	main.interact()
 	check(main.total_gathered == before, "no interaction at unrealistic distance")
