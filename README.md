@@ -20,6 +20,13 @@ A fast, pastel-coloured, romance-themed top-down 2D prototype. **Godot 4.x / GDS
 - Alpha 15%, Beta 75%, Omega 10% of population.
 - Only Betas can potentially evolve into Alpha or Omega. Initial uncategorised-to-Beta transition is undefined; **do not invent its mechanics**.
 
+## Controls (Stage 1)
+WASD / arrows move, **E** interact (gather, plant, harvest, deposit, mark post), **Q** toggle scent (after unlock), **R** restart.
+All balance numbers live in `scripts/config.gd` (marked PROVISIONAL).
+
+## Play / deploy
+Every push to `main` runs a headless gameplay test (`tests/smoke_test.gd`), exports the Web build and publishes it to GitHub Pages.
+
 ## Getting started
 Open the folder containing `project.godot` using Godot 4.x and run the main scene. The current starter is intentionally minimal; use `docs/CLAUDE_BUILD_PROMPT.md` to implement Stage 1.
 

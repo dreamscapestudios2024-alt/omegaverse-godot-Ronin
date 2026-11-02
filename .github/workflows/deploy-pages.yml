@@ -25,6 +25,13 @@ jobs:
         run: |
           mkdir -p ~/.local/share/godot/export_templates
           mv /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/4.3.stable
+      - name: Import project
+        run: godot --headless --path . --import || true
+      - name: Gameplay smoke test
+        run: |
+          godot --headless --path . --script res://tests/smoke_test.gd 2>&1 | tee smoke.log
+          grep -q "ALL PASSED" smoke.log
+          ! grep -E "SCRIPT ERROR|Parse Error" smoke.log
       - name: Export for Web
         run: |
           mkdir -p build/web
