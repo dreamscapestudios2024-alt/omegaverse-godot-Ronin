@@ -15,6 +15,7 @@ func check(cond: bool, msg: String) -> void:
 func _initialize() -> void:
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
+	await process_frame
 	check(main.nest_completion() == 0.0, "nest starts at 0%")
 	check(not main.scent_unlocked, "scent starts locked")
 
