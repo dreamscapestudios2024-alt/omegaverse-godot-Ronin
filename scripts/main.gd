@@ -7,17 +7,17 @@ const PlayerScript = preload("res://scripts/player.gd")
 const HudScript = preload("res://scripts/hud.gd")
 
 const TEX_RESOURCE = {
-	"wood": preload("res://assets/items/wood.png"),
-	"grass": preload("res://assets/items/grass.png"),
-	"leaves": preload("res://assets/items/leaves.png"),
+	"wood": preload("res://assets/items/icon_logs.png"),
+	"grass": preload("res://assets/items/icon_grass.png"),
+	"leaves": preload("res://assets/items/icon_leaf.png"),
 }
-const TEX_SOIL = preload("res://assets/items/soil_tilled.png")
-const TEX_CROP_SEEDS = preload("res://assets/items/crop_seeds.png")
-const TEX_CROP_SPROUT = preload("res://assets/items/crop_sprout.png")
-const TEX_CROP_GROWING = preload("res://assets/items/crop_growing.png")
-const TEX_CROP_RIPE = preload("res://assets/items/crop_ripe.png")
-const TEX_SPARKLE = preload("res://assets/items/sparkle.png")
-const SOIL_PAD = Vector2(12, 36)     # transparent margin around the soil in the plot textures
+const TEX_PLOT_EMPTY = preload("res://assets/items/plot_empty.png")
+const TEX_PLOT_SEEDED = preload("res://assets/items/plot_seeded.png")
+const TEX_PLOT_SPROUT = preload("res://assets/items/plot_sprout.png")
+const TEX_PLOT_GROWING = preload("res://assets/items/plot_growing.png")
+const TEX_PLOT_RIPE = preload("res://assets/items/plot_ripe.png")
+const PLOT_SIZE = Vector2(150, 90)
+const PLOT_PAD = Vector2(11, 44)     # transparent margin around the soil in the plot textures
 
 const CROP_EMPTY = 0
 const CROP_GROWING = 1
@@ -48,7 +48,7 @@ var speckles := PackedVector2Array()
 
 func _ready() -> void:
 	var t: Rect2 = Config.TERRITORY
-	plot_rect = Rect2(t.position.x + 50, t.end.y - 142 - 26, 160, 142)
+	plot_rect = Rect2(t.position.x + 50, t.end.y - PLOT_SIZE.y - 44.0, PLOT_SIZE.x, PLOT_SIZE.y)
 	_add_resources()
 	_add_posts(t)
 	_add_trail()
@@ -191,6 +191,8 @@ func _gather(r: Dictionary) -> void:
 		hud.toast("Your pack is full of %s." % type)
 		return
 	r["charges"] -= 1
+	if player != null:
+		player.play_action("chop" if type == "wood" else "pick")
 	if r["charges"] <= 0:
 		r["regrow"] = Config.RESOURCE_REGROW_SECONDS
 	inventory[type] += 1
@@ -201,9 +203,11 @@ func _use_plot() -> void:
 	if crop_state == CROP_EMPTY:
 		crop_state = CROP_GROWING
 		crop_timer = Config.CROP_GROW_SECONDS
+		player.play_action("plant")
 		hud.toast("Planted a crop. It will be ready in %d seconds." % int(Config.CROP_GROW_SECONDS))
 	elif crop_state == CROP_READY:
 		crop_state = CROP_EMPTY
+		player.play_action("harvest")
 		inventory["crops"] += 1
 		if not crop_harvested:
 			hud.toast("First harvest! Happiness +%d (provisional)." % int(Config.HAPPINESS_CROP_BONUS))
@@ -313,22 +317,29 @@ func _draw() -> void:
 		_draw_scent()
 
 func _draw_plot() -> void:
-	var tex: Texture2D = TEX_SOIL
+	var tex: Texture2D = TEX_PLOT_EMPTY
 	if crop_state == CROP_GROWING:
 		var prog := 1.0 - crop_timer / Config.CROP_GROW_SECONDS
 		if prog < 0.34:
-			tex = TEX_CROP_SEEDS
+			tex = TEX_PLOT_SEEDED
 		elif prog < 0.67:
-			tex = TEX_CROP_SPROUT
+			tex = TEX_PLOT_SPROUT
 		else:
-			tex = TEX_CROP_GROWING
+			tex = TEX_PLOT_GROWING
 	elif crop_state == CROP_READY:
-		tex = TEX_CROP_RIPE
-	draw_texture(tex, plot_rect.position - SOIL_PAD)
+		tex = TEX_PLOT_RIPE
+	draw_texture(tex, plot_rect.position - PLOT_PAD)
 	if crop_state == CROP_READY:
-		var pulse := 0.8 + 0.2 * sin(time * 4.0)
-		var sz := TEX_SPARKLE.get_size() * pulse
-		draw_texture_rect(TEX_SPARKLE, Rect2(plot_rect.end - Vector2(sz.x * 0.6, plot_rect.size.y + 28.0), sz), false)
+		_draw_star(Vector2(plot_rect.end.x - 6.0, plot_rect.position.y - 34.0), 9.0 + 2.0 * sin(time * 4.0))
+		_draw_star(Vector2(plot_rect.position.x + 8.0, plot_rect.position.y - 12.0), 6.0 + 1.5 * sin(time * 5.0 + 1.0))
+
+func _draw_star(c: Vector2, r: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 8:
+		var a := TAU * i / 8.0 - PI / 2.0
+		var rad := r if i % 2 == 0 else r * 0.3
+		pts.append(c + Vector2(cos(a), sin(a)) * rad)
+	draw_colored_polygon(pts, Color("ffe38a"))
 
 func _draw_resource(r: Dictionary) -> void:
 	var pos: Vector2 = r["pos"]

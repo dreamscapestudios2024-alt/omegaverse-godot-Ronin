@@ -4,10 +4,10 @@ extends CanvasLayer
 
 const Config = preload("res://scripts/config.gd")
 const INV_ICONS = [
-	["wood", preload("res://assets/items/wood_icon.png")],
-	["grass", preload("res://assets/items/grass_icon.png")],
-	["leaves", preload("res://assets/items/leaves_icon.png")],
-	["crops", preload("res://assets/items/fruit_icon.png")],
+	["wood", preload("res://assets/items/icon_logs_small.png")],
+	["grass", preload("res://assets/items/icon_grass_small.png")],
+	["leaves", preload("res://assets/items/icon_leaf_small.png")],
+	["crops", preload("res://assets/items/icon_sprout_small.png")],
 ]
 
 var inv_labels := {}
