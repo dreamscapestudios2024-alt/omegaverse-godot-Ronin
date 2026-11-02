@@ -3,8 +3,14 @@ extends CanvasLayer
 ## Built in code with rounded pastel panels. Receives a plain Dictionary each frame.
 
 const Config = preload("res://scripts/config.gd")
+const INV_ICONS = [
+	["wood", preload("res://assets/items/wood_icon.png")],
+	["grass", preload("res://assets/items/grass_icon.png")],
+	["leaves", preload("res://assets/items/leaves_icon.png")],
+	["crops", preload("res://assets/items/fruit_icon.png")],
+]
 
-var inv_label: Label
+var inv_labels := {}
 var nest_bar: ProgressBar
 var nest_value: Label
 var happy_bar: ProgressBar
@@ -73,8 +79,19 @@ func _build() -> void:
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 4)
 	top.add_child(vb)
-	inv_label = _label("")
-	vb.add_child(inv_label)
+	var inv_row := HBoxContainer.new()
+	inv_row.add_theme_constant_override("separation", 6)
+	vb.add_child(inv_row)
+	for e in INV_ICONS:
+		var icon := TextureRect.new()
+		icon.texture = e[1]
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(32, 32)
+		inv_row.add_child(icon)
+		var count := _label("0", 16)
+		count.custom_minimum_size = Vector2(44, 0)
+		inv_row.add_child(count)
+		inv_labels[e[0]] = count
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	vb.add_child(row)
@@ -145,7 +162,8 @@ func _process(delta: float) -> void:
 
 func update_view(s: Dictionary) -> void:
 	var inv: Dictionary = s["inventory"]
-	inv_label.text = "Wood %d    Grass %d    Leaves %d    Crops %d" % [inv["wood"], inv["grass"], inv["leaves"], inv["crops"]]
+	for k in inv_labels:
+		inv_labels[k].text = str(inv[k])
 	nest_bar.value = s["nest_pct"]
 	nest_value.text = "%d%%" % int(s["nest_pct"])
 	happy_bar.value = s["happiness"]

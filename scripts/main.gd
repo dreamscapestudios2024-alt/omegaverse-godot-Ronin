@@ -6,6 +6,19 @@ const Config = preload("res://scripts/config.gd")
 const PlayerScript = preload("res://scripts/player.gd")
 const HudScript = preload("res://scripts/hud.gd")
 
+const TEX_RESOURCE = {
+	"wood": preload("res://assets/items/wood.png"),
+	"grass": preload("res://assets/items/grass.png"),
+	"leaves": preload("res://assets/items/leaves.png"),
+}
+const TEX_SOIL = preload("res://assets/items/soil_tilled.png")
+const TEX_CROP_SEEDS = preload("res://assets/items/crop_seeds.png")
+const TEX_CROP_SPROUT = preload("res://assets/items/crop_sprout.png")
+const TEX_CROP_GROWING = preload("res://assets/items/crop_growing.png")
+const TEX_CROP_RIPE = preload("res://assets/items/crop_ripe.png")
+const TEX_SPARKLE = preload("res://assets/items/sparkle.png")
+const SOIL_PAD = Vector2(12, 36)     # transparent margin around the soil in the plot textures
+
 const CROP_EMPTY = 0
 const CROP_GROWING = 1
 const CROP_READY = 2
@@ -35,7 +48,7 @@ var speckles := PackedVector2Array()
 
 func _ready() -> void:
 	var t: Rect2 = Config.TERRITORY
-	plot_rect = Rect2(t.position.x + 60, t.end.y - 140, 170, 100)
+	plot_rect = Rect2(t.position.x + 50, t.end.y - 142 - 26, 160, 142)
 	_add_resources()
 	_add_posts(t)
 	_add_trail()
@@ -128,7 +141,7 @@ func find_target() -> Dictionary:
 	for r in resources:
 		if r["charges"] <= 0:
 			continue
-		var d: float = p.distance_to(r["pos"]) - 14.0
+		var d: float = p.distance_to(r["pos"]) - 26.0
 		if d < best_d:
 			best_d = d
 			best = {"kind": "resource", "ref": r, "label": "E: gather " + r["type"]}
@@ -300,37 +313,28 @@ func _draw() -> void:
 		_draw_scent()
 
 func _draw_plot() -> void:
-	draw_rect(plot_rect, Config.COL_SOIL)
-	draw_rect(plot_rect, Color("b99a8c"), false, 3.0)
-	for i in 3:
-		var y := plot_rect.position.y + 22.0 + i * 28.0
-		draw_line(Vector2(plot_rect.position.x + 10, y), Vector2(plot_rect.end.x - 10, y), Color("c4a091"), 2.0)
-	for i in 3:
-		var c := Vector2(plot_rect.position.x + 30.0 + i * 55.0, plot_rect.position.y + 50.0)
-		if crop_state == CROP_GROWING:
-			var prog := 1.0 - crop_timer / Config.CROP_GROW_SECONDS
-			draw_circle(c, 3.0 + 9.0 * prog, Config.COL_MINT)
-		elif crop_state == CROP_READY:
-			draw_circle(c, 13.0, Config.COL_PINK)
-			draw_circle(c, 5.0, Color.WHITE)
+	var tex: Texture2D = TEX_SOIL
+	if crop_state == CROP_GROWING:
+		var prog := 1.0 - crop_timer / Config.CROP_GROW_SECONDS
+		if prog < 0.34:
+			tex = TEX_CROP_SEEDS
+		elif prog < 0.67:
+			tex = TEX_CROP_SPROUT
+		else:
+			tex = TEX_CROP_GROWING
+	elif crop_state == CROP_READY:
+		tex = TEX_CROP_RIPE
+	draw_texture(tex, plot_rect.position - SOIL_PAD)
+	if crop_state == CROP_READY:
+		var pulse := 0.8 + 0.2 * sin(time * 4.0)
+		var sz := TEX_SPARKLE.get_size() * pulse
+		draw_texture_rect(TEX_SPARKLE, Rect2(plot_rect.end - Vector2(sz.x * 0.6, plot_rect.size.y + 28.0), sz), false)
 
 func _draw_resource(r: Dictionary) -> void:
 	var pos: Vector2 = r["pos"]
-	if r["charges"] <= 0:
-		draw_circle(pos + Vector2(0, 6), 5.0, Color(0.6, 0.55, 0.6, 0.5))   # depleted stump
-		return
-	match r["type"]:
-		"wood":
-			draw_rect(Rect2(pos.x - 4, pos.y - 2, 8, 20), Color("a9826b"))
-			draw_circle(pos + Vector2(0, -12), 17.0, Color("7fc79b"))
-		"grass":
-			for i in range(-2, 3):
-				draw_line(pos + Vector2(i * 4.0, 10), pos + Vector2(i * 5.0, -8 + absf(i) * 3.0), Color("6fbf8f"), 3.0)
-		"leaves":
-			draw_circle(pos + Vector2(-8, 2), 11.0, Color("a8e6b8"))
-			draw_circle(pos + Vector2(8, 2), 11.0, Color("a8e6b8"))
-			draw_circle(pos + Vector2(0, -6), 12.0, Color("bdf0c9"))
-			draw_circle(pos + Vector2(4, -8), 3.0, Config.COL_PINK)
+	var tex: Texture2D = TEX_RESOURCE[r["type"]]
+	var col := Color(1, 1, 1, 1) if r["charges"] > 0 else Color(1, 1, 1, 0.25)
+	draw_texture(tex, pos - tex.get_size() / 2.0, col)
 
 func _draw_nest() -> void:
 	var tier := nest_tier()
