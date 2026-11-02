@@ -163,5 +163,5 @@ func update_view(s: Dictionary) -> void:
 	prompt_label.text = pr
 	prompt_label.visible = pr != ""
 	var pp: Vector2 = s["player_pos"]
-	prompt_label.position = Vector2(maxf(pp.x - 70.0, 4.0), pp.y - 46.0)
+	prompt_label.position = Vector2(maxf(pp.x - 70.0, 4.0), pp.y - 104.0)
 	banner.visible = s["won"]
